@@ -107,12 +107,12 @@ class Arguments
 			return ptime;
 		}
 
-		unsigned int get_gain()
+		float get_gain()
 		{
 			return gain;
 		}
 
-		unsigned int get_ppm()
+		float get_ppm()
 		{
 			return ppm;
 		}
