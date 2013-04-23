@@ -1,19 +1,20 @@
 /*
 	gr-scan - A GNU Radio signal scanner
 	Copyright (C) 2012  Nicholas Tomlinson
-	
+	Modified by Russell Hande (Zefie Networks)
+
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version.
-	
+
 	This program is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
-	
+
 	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
@@ -33,10 +34,10 @@ class TopBlock : public gr_top_block
 {
 	public:
 		TopBlock(double centre_freq_1, double centre_freq_2, double sample_rate, double fft_width, double bandwidth1, double bandwidth2,
-				double step, unsigned int avg_size, double spread, double threshold, double ptime) : gr_top_block("Top Block"),
+				double step, unsigned int avg_size, double spread, double threshold, double ptime, float gain, float ppm) : gr_top_block("Top Block"),
 			vector_length(sample_rate/fft_width),
 			window(GetWindow(vector_length)),
-			
+
 			source(osmosdr_make_source_c()), /* OsmoSDR Source */
 			stv(gr_make_stream_to_vector(sizeof(float)*2, vector_length)), /* Stream to vector */
 			/* Based on the logpwrfft (a block implemented in python) */
@@ -45,16 +46,16 @@ class TopBlock : public gr_top_block
 			iir(gr_make_single_pole_iir_filter_ff(1.0, vector_length)),
 			lg(gr_make_nlog10_ff(10, vector_length, -20 * log10(vector_length) -10 * log10(GetWindowPower()/vector_length))),
 			/* Sink - this does most of the interesting work */
-			sink(make_scanner_sink(source, vector_length, centre_freq_1, centre_freq_2, sample_rate, bandwidth1, bandwidth2, step, avg_size, spread, threshold, ptime))
+			sink(make_scanner_sink(source, vector_length, centre_freq_1, centre_freq_2, sample_rate, bandwidth1, bandwidth2, step, avg_size, spread, threshold, ptime, gain, ppm))
 		{
 			/* Set up the OsmoSDR Source */
 			source->set_sample_rate(sample_rate);
 			source->set_center_freq(centre_freq_1);
-			source->set_freq_corr(0.0);
+			source->set_freq_corr(ppm);
 			source->set_gain_mode(false);
-			source->set_gain(10.0);
+			source->set_gain(gain);
 			source->set_if_gain(20.0);
-			
+
 			/* Set up the connections */
 			connect(source, 0, stv, 0);
 			connect(stv, 0, fft, 0);
@@ -63,25 +64,25 @@ class TopBlock : public gr_top_block
 			connect(iir, 0, lg, 0);
 			connect(lg, 0, sink, 0);
 		}
-		
+
 	private:
 		/* http://en.wikipedia.org/w/index.php?title=Window_function&oldid=508445914 */
 		std::vector<float> GetWindow(size_t n)
 		{
 			std::vector<float> w;
 			w.resize(n);
-			
+
 			double a = 0.16;
 			double a0 = (1.0 - a)/2.0;
 			double a1 = 0.5;
 			double a2 = a/2.0;
-			
+
 			for (unsigned int i = 0; i < n; i++){
 				w[i] = a0 - a1 * cos((2.0 * 3.14159 * (double)i)/(double)(n - 1)) + a2 * cos((4.0 * 3.14159 * (double)i)/(double)(n - 1));
 			}
 			return w;
 		}
-		
+
 		double GetWindowPower()
 		{
 			double total = 0.0;
@@ -90,10 +91,10 @@ class TopBlock : public gr_top_block
 			}
 			return total;
 		}
-		
+
 		size_t vector_length;
 		std::vector<float> window;
-		
+
 		osmosdr_source_c_sptr source;
 		gr_stream_to_vector_sptr stv;
 		gr_fft_vcc_sptr fft;

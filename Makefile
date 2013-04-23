@@ -16,8 +16,8 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 #
 
-VERSION=2012082301
-CXXFLAGS=-DVERSION="\"gr-scan $(VERSION)\"" -std=c++11 -Wall -I/usr/include/gnuradio -I/usr/include/osmosdr -lgnuradio-core -lgnuradio-osmosdr -lboost_system -O2 -s -Wno-unused-function
+VERSION=20130423-zefie
+CXXFLAGS=-DVERSION="\"gr-scan $(VERSION)\"" -std=c++11 -Wall -I/usr/local/include/gnuradio -I/usr/local/include/osmosdr -lgnuradio-core -lgnuradio-osmosdr -lboost_system -O3 -s -Wno-unused-function
 
 gr-scan: *.cpp *.hpp
 	g++ $(CXXFLAGS) -o gr-scan main.cpp
